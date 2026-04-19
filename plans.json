@@ -145,6 +145,12 @@
       "name": "פזגז קבוע",
       "type": "flat",
       "discount": 0.05
+    },
+    {
+      "id": "amisragas_fixed",
+      "name": "אמישראגז קבוע",
+      "type": "flat",
+      "discount": 0.065
     }
   ]
 }
