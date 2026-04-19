@@ -140,30 +140,31 @@
 
         function getDynamicDescription(plan) {
             if (plan.type === "base") return "תעריף בסיסי של חברת החשמל ללא הנחה";
-            if (plan.type === "flat") return `${Math.round(plan.discount * 100)}% הנחה קבועה כל השעות`;
-
+            if (plan.type === "flat") {
+                const percent = (plan.discount * 100).toFixed(1);
+                return `${percent}% הנחה קבועה כל השעות`;
+            }
             if (plan.type === "discount") {
+                const percent = (plan.discount * 100).toFixed(1);
                 const start = plan.hours.start;
                 const end = plan.hours.end;
-                let hoursText = "";
 
-                if (start < end) {
-                    hoursText = `בין ${start}:00 ל-${end}:00`;
-                } else {
-                    hoursText = `בין ${start}:00 ל-${end}:00 (כולל לילה)`;
-                }
+                let hoursText = (start < end)
+                    ? `בין ${start}:00 ל-${end}:00`
+                    : `בין ${start}:00 ל-${end}:00 (לילה)`;
 
                 let daysText = "";
                 if (plan.days && plan.days.length === 5 && plan.days.every(d => d >= 0 && d <= 4)) {
-                    daysText = "בימים א׳–ה׳";
+                    daysText = "בימים א'-ה'";
                 } else if (plan.days && plan.days.length > 0) {
                     daysText = "בימים מסוימים";
                 }
 
-                return `${Math.round(plan.discount * 100)}% הנחה ${hoursText} ${daysText}`.trim();
+                return `${percent}% הנחה ${hoursText} ${daysText}`.trim();
             }
 
-            if (plan.type === "tou") return "תעריף זמני לפי שעות שיא ושפל (תעו\"ז)";
+            if (plan.type === "tou")
+                return "תעריף עומס וזמן - שיא ושפל (תעו\"ז)";
 
             return "";
         }
