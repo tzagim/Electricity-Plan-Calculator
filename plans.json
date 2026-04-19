@@ -1,0 +1,156 @@
+{
+  "lastUpdated": "19/04/2026",
+  "plans": [
+    { "id": "iec", "name": "חברת החשמל", "type": "base", "baseRate": 0.5451 },
+    {
+      "id": "iec_tou",
+      "name": "חברת החשמל – תעריף תעו\"ז",
+      "type": "tou",
+      "rates": {
+        "summer": {
+          "peakStart": 17,
+          "peakEnd": 23,
+          "peak": 1.7224,
+          "off": 0.5142
+        },
+        "winter": {
+          "peakStart": 17,
+          "peakEnd": 22,
+          "peak": 1.1533,
+          "off": 0.4746
+        },
+        "shoulder": {
+          "peakStart": 17,
+          "peakEnd": 22,
+          "peak": 0.5066,
+          "off": 0.4655
+        }
+      }
+    },
+    {
+      "id": "bezeq_night",
+      "name": "בזק לילה",
+      "type": "discount",
+      "discount": 0.2,
+      "hours": { "start": 23, "end": 7 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "bezeq_fixed",
+      "name": "בזק קבוע",
+      "type": "flat",
+      "discount": 0.06
+    },
+    {
+      "id": "bezeq_day",
+      "name": "בזק יום",
+      "type": "discount",
+      "discount": 0.15,
+      "hours": { "start": 7, "end": 17 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "cellcom_fixed",
+      "name": "סלקום קבוע",
+      "type": "flat",
+      "discount": 0.06
+    },
+    {
+      "id": "cellcom_day",
+      "name": "סלקום יום",
+      "type": "discount",
+      "discount": 0.17,
+      "hours": { "start": 7, "end": 17 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "cellcom_family",
+      "name": "סלקום משפחה",
+      "type": "discount",
+      "discount": 0.18,
+      "hours": { "start": 14, "end": 20 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "cellcom_night",
+      "name": "סלקום לילה",
+      "type": "discount",
+      "discount": 0.2,
+      "hours": { "start": 23, "end": 7 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "electra_day",
+      "name": "אלקטרה יום",
+      "type": "discount",
+      "discount": 0.16,
+      "hours": { "start": 7, "end": 17 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "electra_fixed",
+      "name": "אלקטרה קבוע",
+      "type": "flat",
+      "discount": 0.065
+    },
+    {
+      "id": "electra_night",
+      "name": "אלקטרה לילה פלוס",
+      "type": "discount",
+      "discount": 0.21,
+      "hours": { "start": 23, "end": 7 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "partner_fixed",
+      "name": "פרטנר קבוע",
+      "type": "flat",
+      "discount": 0.05
+    },
+    {
+      "id": "partner_day",
+      "name": "פרטנר יום",
+      "type": "discount",
+      "discount": 0.15,
+      "hours": { "start": 7, "end": 17 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "partner_laila",
+      "name": "פרטנר חיות לילה",
+      "type": "discount",
+      "discount": 0.2,
+      "hours": { "start": 23, "end": 7 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "hot_night",
+      "name": "הוט לילה",
+      "type": "discount",
+      "discount": 0.2,
+      "hours": { "start": 23, "end": 7 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "hot_day",
+      "name": "הוט יום",
+      "type": "discount",
+      "discount": 0.15,
+      "hours": { "start": 7, "end": 17 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    { "id": "hot_fixed", "name": "הוט קבוע", "type": "flat", "discount": 0.05 },
+    {
+      "id": "pazgaz_yellow",
+      "name": "פזגז Yellow",
+      "type": "flat",
+      "discount": 0.1
+    },
+    {
+      "id": "pazgaz_fixed",
+      "name": "פזגז קבוע",
+      "type": "flat",
+      "discount": 0.05
+    }
+  ]
+}
