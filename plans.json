@@ -141,12 +141,6 @@
     },
     { "id": "hot_fixed", "name": "הוט קבוע", "type": "flat", "discount": 0.05 },
     {
-      "id": "pazgaz_yellow",
-      "name": "פזגז Yellow",
-      "type": "flat",
-      "discount": 0.1
-    },
-    {
       "id": "pazgaz_fixed",
       "name": "פזגז קבוע",
       "type": "flat",
