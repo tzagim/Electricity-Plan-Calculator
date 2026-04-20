@@ -255,33 +255,44 @@
         }
 
         function calculateAll() {
-            const results = [];
-            const costCache = new Map();
+            const resultsMap = new Map();
+            const iecPlan = plans.find(p => p.id === "iec");
+
+            let iecCost = 0;
+            rawData.forEach(row => { iecCost += row.cons * getRate(iecPlan, row.date); });
 
             plans.forEach(plan => {
-                if (!costCache.has(plan.id)) {
-                    let totalCost = 0;
-                    rawData.forEach(row => {
-                        totalCost += row.cons * getRate(plan, row.date);
+                let totalCost = 0;
+                rawData.forEach(row => { totalCost += row.cons * getRate(plan, row.date); });
+
+                const conditionKey = plan.type === "flat"
+                    ? `flat-${plan.discount}`
+                    : plan.type === "discount"
+                        ? `dist-${plan.discount}-${plan.hours.start}-${plan.hours.end}-${plan.days.join(',')}`
+                        : plan.id;
+
+                if (resultsMap.has(conditionKey)) {
+                    const existing = resultsMap.get(conditionKey);
+                    existing.names.push(plan.name);
+                } else {
+                    resultsMap.set(conditionKey, {
+                        ...plan,
+                        names: [plan.name],
+                        cost: totalCost,
+                        saving: iecCost - totalCost,
+                        description: getDynamicDescription(plan)
                     });
-                    costCache.set(plan.id, totalCost);
                 }
-
-                const cost = costCache.get(plan.id);
-                const iecCost = costCache.get("iec");
-                const saving = iecCost - cost;
-
-                results.push({
-                    ...plan,
-                    cost: Math.round(cost * 100) / 100,
-                    saving: Math.round(saving * 100) / 100,
-                    description: getDynamicDescription(plan)
-                });
             });
 
+            const finalResults = Array.from(resultsMap.values());
+            finalResults.forEach(r => {
+                r.cost = Math.round(r.cost * 100) / 100;
+                r.saving = Math.round(r.saving * 100) / 100;
+            });
             // sort by cost
-            results.sort((a, b) => a.cost - b.cost);
-            return results;
+            finalResults.sort((a, b) => a.cost - b.cost);
+            return finalResults;
         }
 
         function drawCharts(results) {
@@ -370,12 +381,13 @@
                 let html = `<tr><th>תוכנית</th><th>עלות משוערת</th><th>חיסכון לעומת חברת החשמל</th></tr>`;
 
                 results.forEach(r => {
-                    const isBest = r.id === best.id;
+                    const isBest = r.cost === best.cost;
+                    const combinedName = r.names.join(' / ');
                     const description = getDynamicDescription(r);
 
                     html += `<tr class="${isBest ? 'best' : ''}">
                         <td style="text-align: right;">
-                            <strong>${r.name}</strong><br>
+                            <strong>${combinedName}</strong><br>
                             <small style="color: #666; font-size: 0.92em;">${r.description || ''}</small>
                         </td>
                         <td>₪${r.cost.toFixed(2)}</td>
@@ -383,7 +395,7 @@
                     </tr>`;
                 });
                 document.getElementById('plansTable').innerHTML = html;
-                document.getElementById('bestTitle').innerHTML = `התוכנית המומלצת: <strong>${best.name}</strong> (₪${best.cost.toFixed(2)})`;
+                document.getElementById('bestTitle').innerHTML = `התוכנית המומלצת: <strong>${best.names.join(' / ')}</strong> (₪${best.cost.toFixed(2)})`;
 
                 drawCharts(results);
                 document.getElementById('results').style.display = 'block';
