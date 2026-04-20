@@ -24,32 +24,24 @@
             padding: 30px;
         }
 
-        h1 {
-            text-align: center;
-            color: #1a73e8;
-        }
-
-        .privacy {
-            background: #fff3cd;
+        .config-section {
+            background: #e8f0fe;
             padding: 15px;
             border-radius: 8px;
-            text-align: center;
             margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
         }
 
         button {
             padding: 14px 32px;
-            font-size: 1.15em;
-            margin: 10px;
             background: #1a73e8;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-        }
-
-        button:hover {
-            background: #1557b0;
         }
 
         table {
@@ -60,13 +52,9 @@
 
         th,
         td {
-            padding: 14px;
+            padding: 12px;
             border: 1px solid #ddd;
             text-align: center;
-        }
-
-        th {
-            background: #f1f3f4;
         }
 
         .best {
@@ -81,12 +69,6 @@
             background: #fafafa;
             border-radius: 10px;
         }
-
-        #lastUpdated {
-            color: #555;
-            font-size: 1.05em;
-            margin-bottom: 20px;
-        }
     </style>
 </head>
 
@@ -96,6 +78,12 @@
         <p id="lastUpdated" style="text-align:center;"></p>
 
         <div class="privacy">🔒הפרטיות שלך חשובה. הכל מתבצע בדפדפן שלך - שום נתון לא נשמר</div>
+
+        <div class="config-section">
+            <strong>הטבות מנויים:</strong>
+            <label><input type="checkbox" id="check_amisragas"> אמישראגז </label>
+            <label><input type="checkbox" id="check_hot"> הוט </label>
+        </div>
 
         <input type="file" id="fileInput" accept=".csv" style="display:none;">
         <button onclick="document.getElementById('fileInput').click()">📤 העלאת קובץ CSV מחברת החשמל</button>
@@ -137,20 +125,22 @@
         let rawData = [];
         let hourlyChartInstance = null;
         let monthlyChartInstance = null;
+        let firstDate = null;
 
-        function getDynamicDescription(plan) {
+        function getDynamicDescription(plan, isMember) {
+            const disc = isMember && plan.memberDiscount ? plan.memberDiscount : plan.discount;
             if (plan.type === "base") return "תעריף בסיסי של חברת החשמל ללא הנחה";
             if (plan.type === "flat") {
-                const percent = (plan.discount * 100).toFixed(1);
-                return `${percent}% הנחה קבועה כל השעות`;
+                const percent = (disc * 100).toFixed(1);
+                return `${percent}% הנחה קבועה בכל שעות היממה`;
             }
             if (plan.type === "discount") {
-                const percent = (plan.discount * 100).toFixed(1);
+                const percent = (disc * 100).toFixed(1);
                 const start = plan.hours.start;
                 const end = plan.hours.end;
 
                 let hoursText = (start < end)
-                    ? `בין ${start}:00 ל-${end}:00`
+                    ? `בין ${start}:00 ל-${end}:00 (יום)`
                     : `בין ${start}:00 ל-${end}:00 (לילה)`;
 
                 let daysText = "";
@@ -217,29 +207,44 @@
             }
         }
 
-        function getRate(plan, date) {
+        function getRate(plan, date, isMember) {
             const baseRate = plans.find(p => p.id === "iec").baseRate || 0.5451;
             const hour = date.getHours();
             const dayOfWeek = date.getDay();
+            let discount = plan.discount || 0;
+
+            // check member discount first
+            if (isMember && plan.memberDiscount) {
+                discount = plan.memberDiscount;
+            }
+
+            // check steps discount
+            if (plan.steps && firstDate) {
+                const diffMonths = (date.getFullYear() - firstDate.getFullYear()) * 12 + (date.getMonth() - firstDate.getMonth());
+                let currentStep = plan.steps[0];
+                let monthsAccumulated = 0;
+                for (let step of plan.steps) {
+                    monthsAccumulated += step.months;
+                    if (diffMonths < monthsAccumulated) {
+                        currentStep = step;
+                        break;
+                    }
+                    currentStep = step;
+                }
+                discount = currentStep.discount;
+            }
 
             if (plan.type === "base") return baseRate;
-            if (plan.type === "flat") return baseRate * (1 - (plan.discount || 0));
-
+            if (plan.type === "flat") return baseRate * (1 - discount);
             if (plan.type === "discount") {
                 const start = plan.hours.start;
                 const end = plan.hours.end;
-                let inHours = false;
-
-                if (start < end) {
-                    inHours = hour >= start && hour < end;
-                } else { // overnight
-                    inHours = hour >= start || hour < end;
-                }
-
+                const inHours = start < end ?
+                    (hour >= start && hour < end) :
+                    (hour >= start || hour < end);
                 const correctDay = plan.days.includes(dayOfWeek);
-                return (inHours && correctDay) ? baseRate * (1 - plan.discount) : baseRate;
+                return (inHours && correctDay) ? baseRate * (1 - discount) : baseRate;
             }
-
             if (plan.type === "tou") {
                 const month = date.getMonth() + 1;
                 let season = "shoulder";
@@ -257,13 +262,21 @@
         function calculateAll() {
             const resultsMap = new Map();
             const iecPlan = plans.find(p => p.id === "iec");
-
+            const isAmisragasMember = document.getElementById('check_amisragas').checked;
+            const isHotMember = document.getElementById('check_hot').checked;
             let iecCost = 0;
+
             rawData.forEach(row => { iecCost += row.cons * getRate(iecPlan, row.date); });
 
+            // Find the earliest date in the data to calculate step-based discounts correctly
+            if (rawData.length > 0) {
+                firstDate = new Date(Math.min(...rawData.map(d => d.date)));
+            }
+
             plans.forEach(plan => {
+                const isMember = (plan.id.includes('hot') && isHotMember) || (plan.id.includes('amisragas') && isAmisragasMember);
                 let totalCost = 0;
-                rawData.forEach(row => { totalCost += row.cons * getRate(plan, row.date); });
+                rawData.forEach(row => { totalCost += row.cons * getRate(plan, row.date, isMember); });
 
                 const conditionKey = plan.type === "flat"
                     ? `flat-${plan.discount}`
@@ -280,7 +293,7 @@
                         names: [plan.name],
                         cost: totalCost,
                         saving: iecCost - totalCost,
-                        description: getDynamicDescription(plan)
+                        description: getDynamicDescription(plan, isMember)
                     });
                 }
             });
