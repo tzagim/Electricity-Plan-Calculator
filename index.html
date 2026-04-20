@@ -128,9 +128,9 @@
                 lastUpdated = data.lastUpdated;
                 plans = data.plans;
                 document.getElementById('lastUpdated').innerHTML =
-                    `עדכון אחרון של התוכניות: <strong>${lastUpdated}</strong>`;
+                    `תאריך עדכון אחרון: <strong>${lastUpdated}</strong>`;
             } catch (e) {
-                alert('שגיאה בטעינת plans.json – ודא שהקובץ באותו תיקייה');
+                alert('שגיאה בטעינת plans.json – נא לדווח למפתח');
             }
         }
 
@@ -139,10 +139,10 @@
         let monthlyChartInstance = null;
 
         function getDynamicDescription(plan) {
-            if (plan.type === "base") return "תעריף בסיסי של חברת החשמל ללא הנחה";
+            if (plan.type === "base") return "תעריף חברת החשמל ללא הנחה";
             if (plan.type === "flat") {
                 const percent = (plan.discount * 100).toFixed(1);
-                return `${percent}% הנחה קבועה כל השעות`;
+                return `${percent}% הנחה קבועה בכל שעות היממה`;
             }
             if (plan.type === "discount") {
                 const percent = (plan.discount * 100).toFixed(1);
@@ -150,7 +150,7 @@
                 const end = plan.hours.end;
 
                 let hoursText = (start < end)
-                    ? `בין ${start}:00 ל-${end}:00`
+                    ? `בין ${start}:00 ל-${end}:00 (יום)`
                     : `בין ${start}:00 ל-${end}:00 (לילה)`;
 
                 let daysText = "";
@@ -164,7 +164,7 @@
             }
 
             if (plan.type === "tou")
-                return "תעריף עומס וזמן - שיא ושפל (תעו\"ז)";
+                return "תעריף עומס וזמן - שיא ושפל";
 
             return "";
         }
@@ -331,7 +331,7 @@
                     labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
                     datasets: [
                         { label: 'כל השבוע', data: avgAll, borderColor: '#28a745', tension: 0.3 },
-                        { label: 'ימי א-ה', data: avgWeekday, borderColor: '#dc3545', tension: 0.3 },
+                        { label: 'ימי חול', data: avgWeekday, borderColor: '#dc3545', tension: 0.3 },
                         { label: 'שישי', data: avgFriday, borderColor: '#007bff', tension: 0.3 },
                         { label: 'שבת', data: avgSaturday, borderColor: '#6f42c1', tension: 0.3 }
                     ]
@@ -395,7 +395,7 @@
                     </tr>`;
                 });
                 document.getElementById('plansTable').innerHTML = html;
-                document.getElementById('bestTitle').innerHTML = `התוכנית המומלצת: <strong>${best.names.join(' / ')}</strong> (₪${best.cost.toFixed(2)})`;
+                document.getElementById('bestTitle').innerHTML = `התוכנית המומלצת היא: <strong>${best.names.join(' / ')}</strong>`;
 
                 drawCharts(results);
                 document.getElementById('results').style.display = 'block';
