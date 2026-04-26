@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "21/04/2026",
+  "lastUpdated": "26/04/2026",
   "plans": [
     { "id": "iec", "name": "חברת החשמל", "type": "base", "baseRate": 0.5451 },
     {
@@ -83,7 +83,7 @@
       "id": "electra_day",
       "name": "אלקטרה יום",
       "type": "discount",
-      "discount": 0.16,
+      "discount": 0.17,
       "hours": { "start": 7, "end": 17 },
       "days": [0, 1, 2, 3, 4]
     },
