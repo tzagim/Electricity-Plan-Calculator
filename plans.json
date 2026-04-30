@@ -76,7 +76,8 @@
       "name": "סלקום לילה",
       "type": "discount",
       "discount": 0.15,
-      "hours": { "start": 23, "end": 7 }
+      "hours": { "start": 23, "end": 7 },
+      "days": [0, 1, 2, 3, 4, 5, 6]
     },
     {
       "id": "electra_day",
