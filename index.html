@@ -236,7 +236,7 @@
                     inHours = hour >= start || hour < end;
                 }
 
-                const correctDay = plan.days.includes(dayOfWeek);
+                const correctDay = !plan.days || plan.days.includes(dayOfWeek);
                 return (inHours && correctDay) ? baseRate * (1 - plan.discount) : baseRate;
             }
 
