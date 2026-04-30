@@ -154,7 +154,9 @@
                     : `בין ${start}:00 ל-${end}:00 (לילה)`;
 
                 let daysText = "";
-                if (plan.days && plan.days.length === 5 && plan.days.every(d => d >= 0 && d <= 4)) {
+                if (!plan.days || plan.days.length === 7) {
+                    daysText = "כל ימות השבוע";
+                } else if (plan.days && plan.days.length === 5 && plan.days.every(d => d >= 0 && d <= 4)) {
                     daysText = "בימים א'-ה'";
                 } else if (plan.days && plan.days.length > 0) {
                     daysText = "בימים מסוימים";
