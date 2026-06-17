@@ -54,6 +54,7 @@
       "name": "סלקום קבוע",
       "type": "discount",
       "discount": 0.075,
+      "hours": { "start": 0, "end": 24 },
       "days": [0, 1, 2, 3, 4]
     },
     {
