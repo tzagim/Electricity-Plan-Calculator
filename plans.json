@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "14/06/2026",
+  "lastUpdated": "17/06/2026",
   "plans": [
     { "id": "iec", "name": "חברת החשמל", "type": "base", "baseRate": 0.5451 },
     {
@@ -52,8 +52,9 @@
     {
       "id": "cellcom_fixed",
       "name": "סלקום קבוע",
-      "type": "flat",
-      "discount": 0.06
+      "type": "discount",
+      "discount": 0.075,
+      "days": [0, 1, 2, 3, 4]
     },
     {
       "id": "cellcom_day",
