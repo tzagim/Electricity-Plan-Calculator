@@ -1,5 +1,6 @@
 {
   "lastUpdated": "30/06/2026",
+  "vat": 1.18,
   "plans": [
     { "id": "iec", "name": "חברת החשמל", "type": "base", "baseRate": 0.5451 },
     {
@@ -49,14 +50,7 @@
       "hours": { "start": 7, "end": 17 },
       "days": [0, 1, 2, 3, 4]
     },
-    {
-      "id": "cellcom_fixed",
-      "name": "סלקום קבוע",
-      "type": "discount",
-      "discount": 0.075,
-      "hours": { "start": 0, "end": 24 },
-      "days": [0, 1, 2, 3, 4]
-    },
+    { "id": "cellcom_fixed", "name": "סלקום קבוע", "type": "flat", "discount": 0.06 },
     {
       "id": "cellcom_day",
       "name": "סלקום יום",
@@ -71,6 +65,14 @@
       "type": "discount",
       "discount": 0.18,
       "hours": { "start": 14, "end": 20 },
+      "days": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "cellcom_family_plus",
+      "name": "סלקום משפחה פלוס",
+      "type": "discount",
+      "discount": 0.18,
+      "hours": { "start": 20, "end": 2 },
       "days": [0, 1, 2, 3, 4]
     },
     {
@@ -160,7 +162,7 @@
       "id": "amisragas_fixed",
       "name": "אמישראגז קבוע",
       "type": "flat",
-      "discount": 0.065
+      "discount": 0.06
     }
   ]
 }
