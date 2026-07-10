@@ -120,12 +120,14 @@
         // plans.json
         let plans = [];
         let lastUpdated = "";
+        let vatRate = 1.18; // VAT multiplier; overridden by plans.json "vat" if present
 
         async function loadPlans() {
             try {
                 const res = await fetch('plans.json');
                 const data = await res.json();
                 lastUpdated = data.lastUpdated;
+                vatRate = data.vat || 1.18;
                 plans = data.plans;
                 document.getElementById('lastUpdated').innerHTML =
                     `תאריך עדכון אחרון: <strong>${lastUpdated}</strong>`;
@@ -180,15 +182,22 @@
             rawData = [];
             const lines = csvText.split('\n');
             let startRow = -1;
+            let dateIdx = -1, timeIdx = -1, consIdx = -1, typeIdx = -1;
 
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].includes('תאריך') && lines[i].includes('מועד תחילת הפעימה')) {
+                    // Map columns by header name so the parser is robust to IEC's different export layouts.
+                    const hdr = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                    dateIdx = hdr.findIndex(c => c.includes('תאריך'));
+                    timeIdx = hdr.findIndex(c => c.includes('הפעימה'));
+                    consIdx = hdr.findIndex(c => c.includes('צריכה')); // "צריכה בקוט\"ש" or "צריכה/ייצור בקוט\"ש"
+                    typeIdx = hdr.findIndex(c => c.includes('סוג מונה'));
                     startRow = i + 1;
                     break;
                 }
             }
 
-            if (startRow === -1) {
+            if (startRow === -1 || dateIdx === -1 || timeIdx === -1 || consIdx === -1) {
                 alert('לא נמצא מבנה קובץ תקין. ודא שהקובץ הוא מקורי של חברת החשמל.');
                 return;
             }
@@ -198,11 +207,17 @@
                 if (!line) continue;
                 const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
 
-                if (cols.length < 6) continue;
+                // Locate the relevant columns by the header row instead of hard-coding indices,
+                // so both IEC export formats work: the 3-column file (date,time,kWh) and the
+                // 6-column "צריכה/ייצור" file (meter,type,date,time,kWh,feed-in).
+                if (cols.length < dateIdx + 1 || cols.length < consIdx + 1) continue;
 
-                const dateStr = cols[2];
-                const timeStr = cols[3];
-                const consStr = cols[4];
+                // Skip production ("ייצור") rows when a meter-type column exists; only count consumption.
+                if (typeIdx >= 0 && cols[typeIdx] && !cols[typeIdx].includes('צריכה')) continue;
+
+                const dateStr = cols[dateIdx];
+                const timeStr = cols[timeIdx];
+                const consStr = cols[consIdx];
 
                 if (!dateStr || !timeStr || !consStr) continue;
 
@@ -211,7 +226,7 @@
                     const [hour, minute] = timeStr.split(':').map(Number);
                     const consumption = parseFloat(consStr);
 
-                    if (isNaN(day) || isNaN(consumption)) continue;
+                    if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hour) || isNaN(minute) || isNaN(consumption)) continue;
 
                     const date = new Date(year, month - 1, day, hour, minute);
 
@@ -225,7 +240,10 @@
         }
 
         function getRate(plan, date) {
-            const baseRate = plans.find(p => p.id === "iec").baseRate || 0.5451;
+            // baseRate in plans.json is the published EX-VAT energy tariff; the תעו"ז (tou) rates
+            // are already VAT-inclusive. Multiply the ex-VAT rates by vatRate so every plan is
+            // compared on one VAT-inclusive basis and the ₪ figures match the real bill.
+            const baseRate = (plans.find(p => p.id === "iec").baseRate || 0.5451) * vatRate;
             const hour = date.getHours();
             const dayOfWeek = date.getDay();
 
@@ -254,7 +272,9 @@
                 else if ([12, 1, 2].includes(month)) season = "winter";
 
                 const r = plan.rates[season];
-                const isPeak = hour >= r.peakStart && hour < r.peakEnd;
+                // Peak (פסגה) never applies on Fri (5) / Sat (6): Shabbat, Fri & holiday-eves are
+                // off-peak. tou rates are already VAT-inclusive, so no vatRate multiplier here.
+                const isPeak = dayOfWeek !== 5 && dayOfWeek !== 6 && hour >= r.peakStart && hour < r.peakEnd;
                 return isPeak ? r.peak : r.off;
             }
 
@@ -275,7 +295,7 @@
                 const conditionKey = plan.type === "flat"
                     ? `flat-${plan.discount}`
                     : plan.type === "discount"
-                        ? `dist-${plan.discount}-${plan.hours.start}-${plan.hours.end}-${plan.days.join(',')}`
+                        ? `dist-${plan.discount}-${plan.hours.start}-${plan.hours.end}-${(plan.days || [0, 1, 2, 3, 4, 5, 6]).join(',')}`
                         : plan.id;
 
                 if (resultsMap.has(conditionKey)) {
@@ -303,33 +323,36 @@
         }
 
         function drawCharts(results) {
-            // Graf Hourly
+            // Graf Hourly — average kWh actually consumed during each hour-of-day.
+            // Divide the summed kWh by the number of DISTINCT DAYS observed at that hour
+            // (not the number of 15-min readings), so the value is real average hourly consumption.
             const hourlySums = { all: new Array(24).fill(0), weekday: new Array(24).fill(0), friday: new Array(24).fill(0), saturday: new Array(24).fill(0) };
-            const hourlyCounts = { all: new Array(24).fill(0), weekday: new Array(24).fill(0), friday: new Array(24).fill(0), saturday: new Array(24).fill(0) };
+            const hourlyDays = { all: Array.from({ length: 24 }, () => new Set()), weekday: Array.from({ length: 24 }, () => new Set()), friday: Array.from({ length: 24 }, () => new Set()), saturday: Array.from({ length: 24 }, () => new Set()) };
 
             rawData.forEach(row => {
                 const h = row.date.getHours();
                 const dow = row.date.getDay();
+                const dayKey = `${row.monthKey}-${row.date.getDate()}`;
 
                 hourlySums.all[h] += row.cons;
-                hourlyCounts.all[h]++;
+                hourlyDays.all[h].add(dayKey);
 
                 if (dow >= 0 && dow <= 4) { // א-ה
                     hourlySums.weekday[h] += row.cons;
-                    hourlyCounts.weekday[h]++;
+                    hourlyDays.weekday[h].add(dayKey);
                 } else if (dow === 5) { // שישי
                     hourlySums.friday[h] += row.cons;
-                    hourlyCounts.friday[h]++;
+                    hourlyDays.friday[h].add(dayKey);
                 } else if (dow === 6) { // שבת
                     hourlySums.saturday[h] += row.cons;
-                    hourlyCounts.saturday[h]++;
+                    hourlyDays.saturday[h].add(dayKey);
                 }
             });
 
-            const avgAll = hourlySums.all.map((s, i) => hourlyCounts.all[i] ? s / hourlyCounts.all[i] : 0);
-            const avgWeekday = hourlySums.weekday.map((s, i) => hourlyCounts.weekday[i] ? s / hourlyCounts.weekday[i] : 0);
-            const avgFriday = hourlySums.friday.map((s, i) => hourlyCounts.friday[i] ? s / hourlyCounts.friday[i] : 0);
-            const avgSaturday = hourlySums.saturday.map((s, i) => hourlyCounts.saturday[i] ? s / hourlyCounts.saturday[i] : 0);
+            const avgAll = hourlySums.all.map((s, i) => hourlyDays.all[i].size ? s / hourlyDays.all[i].size : 0);
+            const avgWeekday = hourlySums.weekday.map((s, i) => hourlyDays.weekday[i].size ? s / hourlyDays.weekday[i].size : 0);
+            const avgFriday = hourlySums.friday.map((s, i) => hourlyDays.friday[i].size ? s / hourlyDays.friday[i].size : 0);
+            const avgSaturday = hourlySums.saturday.map((s, i) => hourlyDays.saturday[i].size ? s / hourlyDays.saturday[i].size : 0);
 
             if (hourlyChartInstance) hourlyChartInstance.destroy();
             hourlyChartInstance = new Chart(document.getElementById('hourlyChart'), {
@@ -375,7 +398,13 @@
 
             const reader = new FileReader();
             reader.onload = function (ev) {
-                parseCSV(ev.target.result);
+                // Decode as UTF-8 first; fall back to Windows-1255 for legacy Hebrew exports
+                // whose header would otherwise be mojibake and fail detection.
+                let text = new TextDecoder('utf-8').decode(ev.target.result);
+                if (!text.includes('מועד תחילת הפעימה')) {
+                    try { text = new TextDecoder('windows-1255').decode(ev.target.result); } catch (e) { }
+                }
+                parseCSV(text);
                 if (rawData.length === 0) {
                     alert('לא נמצאו נתוני צריכה בקובץ');
                     return;
@@ -407,7 +436,7 @@
                 drawCharts(results);
                 document.getElementById('results').style.display = 'block';
             };
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
         });
 
         loadPlans();
