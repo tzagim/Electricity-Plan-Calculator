@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "13/09/2026",
+  "lastUpdated": "01/10/2026",
   "vat": 1.18,
   "plans": [
     { "id": "iec", "name": "חברת החשמל", "type": "base", "baseRate": 0.5451 },
